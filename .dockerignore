@@ -1,0 +1,12 @@
+# Keep build outputs and local artefacts out of the docker build context.
+# The Dockerfile unpacks and compiles poppler/, fontforge/ and poppler-data/
+# itself inside the image (see buildScripts/getPoppler, buildScripts/getFontforge).
+.git
+.codegraph
+/poppler
+/poppler-data
+/fontforge
+/build
+/imageBuild
+/pdf2htmlEX/build
+*.tar.*

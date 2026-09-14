@@ -106,10 +106,12 @@ public:
 
     // return id
     long long install(const double * new_value) {
-        Matrix m;
-        memcpy(m.m, new_value, 4 * sizeof(double));
+        // poppler's Matrix stores its coefficients in a std::array; we only
+        // care about the first 4 elements here (see Matrix_less)
+        Matrix m { };
+        memcpy(m.m.data(), new_value, 4 * sizeof(double));
         auto iter = value_map.lower_bound(m);
-        if((iter != value_map.end()) && (tm_equal(m.m, iter->first.m, 4)))
+        if((iter != value_map.end()) && (tm_equal(m.m.data(), iter->first.m.data(), 4)))
         {
             return iter->second;
         }
@@ -316,7 +318,7 @@ public:
         // TODO: recognize common matrices
         const auto & m = matrix.m;
         auto prefixes = {"", "-ms-", "-webkit-"};
-        if(tm_equal(m, ID_MATRIX, 4))
+        if(tm_equal(m.data(), ID_MATRIX, 4))
         {
             for(auto & s : prefixes)
                 out << s << "transform:none;";

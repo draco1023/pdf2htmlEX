@@ -79,6 +79,13 @@ include_directories(
 #
 include_directories(${FONTFORGE_INCLUDE_DIRS})
 link_directories(${FONTFORGE_LIBRARY_DIRS})
+#
+# FontForge's public headers (inc/ffglib.h, pulled in by fontforge/baseviews.h)
+# and the poppler glib wrapper need the glib/gio/gobject headers and libraries.
+#
+pkg_check_modules(GLIB2 REQUIRED glib-2.0 gio-2.0 gobject-2.0)
+include_directories(${GLIB2_INCLUDE_DIRS})
+link_directories(${GLIB2_LIBRARY_DIRS})
 set(FONTFORGE_LIBRARIES ${FONTFORGE_LIBRARIES}
   ${CMAKE_SOURCE_DIR}/../fontforge/build/lib/libfontforge.a
 )
@@ -126,8 +133,8 @@ set(CMAKE_THREAD_PREFER_PTHREAD ON)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 set(PDF2HTMLEX_LIBS ${PDF2HTMLEX_LIBS} Threads::Threads)
-# Poppler-24.03.0 requires CXX20
-set(CMAKE_CXX_STANDARD 20)
+# Poppler-26.09.0 is built with CXX23
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if(NOT CYGWIN)
     set(CMAKE_CXX_EXTENSIONS OFF)

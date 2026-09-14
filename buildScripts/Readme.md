@@ -85,6 +85,13 @@ installing `pdf2htmlEX` into /usr/local/bin.
 [Debian](https://www.debian.org/) based distribution. such as 
 [Ubuntu](https://ubuntu.com/), [Linux Mint](https://linuxmint.com/), etc. 
 
+**NOTE:** the pinned Poppler version (`POPPLER_VERSION` in 
+`buildScripts/versionEnvs`) needs a recent tool-chain and set of system 
+libraries. Poppler-26.09.0 requires CMake >= 3.28, glib >= 2.80, 
+cairo >= 1.18, freetype >= 2.13 and fontconfig >= 2.15, so the build 
+machine needs a distribution at least as recent as Debian 13 (trixie); 
+Debian 12 (bookworm) is too old. 
+
 **NOTE:** there is currently an *experimental* build script, 
 `./buildScripts/buildInstallLocallyAlpine`, for builds in Alpine 
 environments. 

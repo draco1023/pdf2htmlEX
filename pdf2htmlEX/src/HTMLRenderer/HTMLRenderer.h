@@ -107,7 +107,7 @@ struct HTMLRenderer : OutputDev
     // box is the crop box?
     virtual bool needClipToCropBox() { return true; }
 
-    virtual void setDefaultCTM(const double *ctm);
+    virtual void setDefaultCTM(const std::array<double, 6> & ctm);
 
     // Start a page.
     virtual void startPage(int pageNum, GfxState *state, XRef * xref);
@@ -154,7 +154,7 @@ struct HTMLRenderer : OutputDev
     virtual void eoClip(GfxState * state);
     virtual void clipToStrokePath(GfxState * state);
     
-    virtual void drawString(GfxState * state, const GooString * s);
+    virtual void drawString(GfxState * state, const std::string & s);
 
     virtual void drawImage(GfxState * state, Object * ref, Stream * str,
                  int width, int height, GfxImageColorMap * colorMap,
@@ -174,7 +174,7 @@ struct HTMLRenderer : OutputDev
     virtual void eoFill(GfxState *state);
     virtual bool axialShadedFill(GfxState *state, GfxAxialShading *shading, double tMin, double tMax);
 
-  virtual void beginTransparencyGroup(GfxState * /*state*/, const double * /*bbox*/,
+  virtual void beginTransparencyGroup(GfxState * /*state*/, const std::array<double, 4> & /*bbox*/,
                                       GfxColorSpace * /*blendingColorSpace*/,
                                       bool /*isolated*/, bool /*knockout*/,
                                       bool /*forSoftMask*/);

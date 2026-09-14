@@ -62,7 +62,7 @@ bool HTMLRenderer::axialShadedFill(GfxState *state, GfxAxialShading *shading, do
     return true;
 }
 
-void HTMLRenderer::beginTransparencyGroup(GfxState *state, const double *bbox,
+void HTMLRenderer::beginTransparencyGroup(GfxState *state, const std::array<double, 4> &bbox,
                                       GfxColorSpace *blendingColorSpace,
                                       bool isolated, bool knockout,
                                       bool forSoftMask) {

@@ -1,0 +1,83 @@
+# pdf2htmlEX container image (Debian Trixie)
+#
+# Builds pdf2htmlEX from *this* repository, statically linked against the exact
+# Poppler and FontForge releases pinned in buildScripts/versionEnvs.
+#
+#   docker build -f docker/Dockerfile.trixie -t pdf2htmlex:trixie .
+#
+# Trixie (rather than Bookworm) is required because Poppler 26.09.0 needs
+# CMake >= 3.28, glib >= 2.80, cairo >= 1.18, freetype >= 2.13 and
+# fontconfig >= 2.15.
+#
+# The build scripts locate the compiled Poppler/FontForge trees through the
+# relative paths hard-coded in pdf2htmlEX/CMakeLists.txt (../poppler,
+# ../fontforge), hence the /src/pdf2htmlEX working layout used below.
+
+# ---------- base system ----------
+FROM debian:trixie
+
+ARG DEBIAN_FRONTEND=noninteractive
+# Parallelism used by the CMake builds (the scripts expand $MAKE_PARALLEL).
+ARG MAKE_PARALLEL="-j6"
+
+# Build-time tools, plus every development library that the static Poppler and
+# FontForge builds need (and that pdf2htmlEX links against).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    make g++ pkg-config cmake                 \
+    autoconf automake libtool dpkg-dev        \
+    wget ca-certificates git                  \
+    gettext jq default-jre-headless            \
+    libcairo2-dev libpng-dev zlib1g-dev       \
+    libfreetype-dev libfontconfig-dev         \
+    libjpeg-dev libopenjp2-7-dev              \
+    libxml2-dev libglib2.0-dev libffi-dev     \
+ && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /src
+
+ENV PDF2HTMLEX_BRANCH=cutlassfish \
+    PDF2HTMLEX_PREFIX=/usr/local \
+    UNATTENDED=--assume-yes \
+    MAKE_PARALLEL=$MAKE_PARALLEL \
+    DEBIAN_FRONTEND=noninteractive
+
+# The build scripts are plain /bin/sh scripts that assume they may `sudo`, and
+# Windows check-outs store them with CRLF line endings, which /bin/sh cannot
+# execute. Normalise every script we copy, then strip the useless `sudo`.
+
+# ---------- static Poppler (pinned by buildScripts/versionEnvs) ----------
+COPY buildScripts/versionEnvs buildScripts/getPoppler buildScripts/buildPoppler buildScripts/
+RUN set -eux; \
+    grep -rIl '' buildScripts | xargs -r sed -i 's/\r$//'; \
+    sed -i 's/sudo //g' buildScripts/*; \
+    ./buildScripts/versionEnvs; \
+    ./buildScripts/getPoppler; \
+    ./buildScripts/buildPoppler
+
+# ---------- static FontForge (pinned by buildScripts/versionEnvs) ----------
+COPY buildScripts/getFontforge buildScripts/buildFontforge buildScripts/
+RUN set -eux; \
+    grep -rIl '' buildScripts | xargs -r sed -i 's/\r$//'; \
+    sed -i 's/sudo //g' buildScripts/*; \
+    ./buildScripts/getFontforge; \
+    ./buildScripts/buildFontforge
+
+# ---------- pdf2htmlEX ----------
+COPY . .
+RUN set -eux; \
+    grep -rIl '' buildScripts pdf2htmlEX | xargs -r sed -i 's/\r$//'; \
+    sed -i 's/sudo //g' buildScripts/*; \
+    ./buildScripts/buildPdf2htmlEX; \
+    ./buildScripts/installPdf2htmlEX
+
+# ---------- strip the build tool-chain (the runtime libraries stay) ----------
+RUN apt-get purge -y make g++ pkg-config cmake autoconf automake libtool \
+        dpkg-dev wget git default-jre-headless \
+ && apt-get autoremove -y \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/* /root/.cache \
+           /src/pdf2htmlEX/build /src/poppler /src/fontforge \
+           /src/poppler-data /src/poppler-*.tar.*
+
+# ---------- default command ----------
+ENTRYPOINT ["pdf2htmlEX"]
