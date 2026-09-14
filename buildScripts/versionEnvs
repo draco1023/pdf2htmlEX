@@ -4,11 +4,12 @@
 # versions
 
 # see: https://poppler.freedesktop.org/releases.html
-# current working: 24.06.1
+# current working: 26.09.0
 
 export PDF2HTMLEX_VERSION=0.18.8.rc2
 
-export POPPLER_VERSION=poppler-24.06.1
+export POPPLER_VERSION=poppler-26.09.0
+#export POPPLER_VERSION=poppler-24.06.1
 #export POPPLER_VERSION=poppler-24.01.0
 #export POPPLER_VERSION=poppler-23.12.0
 #export POPPLER_VERSION=poppler-21.02.0
@@ -24,9 +25,10 @@ export POPPLER_VERSION=poppler-24.06.1
 #export POPPLER_VERSION=poppler-0.81.0
 
 # see: https://github.com/fontforge/fontforge/releases
-# current working: 20230101
+# current working: 20251009
 
-export FONTFORGE_VERSION=20230101
+export FONTFORGE_VERSION=20251009
+#export FONTFORGE_VERSION=20230101
 #export FONTFORGE_VERSION=20220308
 #export FONTFORGE_VERSION=20190801
 #export FONTFORGE_VERSION=20190413

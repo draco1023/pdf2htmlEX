@@ -273,7 +273,7 @@ void HTMLRenderer::processLink(AnnotLink * al)
             double r,g,b;
             if(color && (color->getSpace() == AnnotColor::colorRGB))
             {
-                const double * v = color->getValues();
+                const auto & v = color->getValues();
                 r = v[0];
                 g = v[1];
                 b = v[2];

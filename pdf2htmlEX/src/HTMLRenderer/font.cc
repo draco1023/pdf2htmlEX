@@ -110,7 +110,7 @@ string HTMLRenderer::dump_embedded_font (GfxFont * font, FontInfo & info)
         obj = dict->lookup("FontFile3");
         if(obj.isStream())
         {
-            obj1 = obj.streamGetDict()->lookup("Subtype");
+            obj1 = obj.getStream()->getDict()->lookup("Subtype");
             if(obj1.isName())
             {
                 subtype = obj1.getName();
@@ -158,7 +158,8 @@ string HTMLRenderer::dump_embedded_font (GfxFont * font, FontInfo & info)
             throw 0;
         }
 
-        obj.streamReset();
+        Stream * font_stream = obj.getStream();
+        const std::vector<unsigned char> font_data = font_stream->toUnsignedChars();
 
         filepath = (char*)str_fmt("%s/f%llx%s", param.tmp_dir.c_str(), fn_id, suffix.c_str());
         tmp_files.add(filepath);
@@ -167,13 +168,8 @@ string HTMLRenderer::dump_embedded_font (GfxFont * font, FontInfo & info)
         if(!outf)
             throw string("Cannot open file ") + filepath + " for writing";
 
-        char buf[1024];
-        int len;
-        while((len = obj.streamGetChars(1024, (unsigned char*)buf)) > 0)
-        {
-            outf.write(buf, len);
-        }
-        obj.streamClose();
+        outf.write(reinterpret_cast<const char*>(font_data.data()), font_data.size());
+        font_stream->close();
     }
     catch(int) 
     {
@@ -205,10 +201,10 @@ string HTMLRenderer::dump_type3_font (GfxFont * font, FontInfo & info)
     auto used_map = preprocessor.get_code_map(hash_ref(font->getID()));
 
     //calculate transformed metrics
-    const double * font_bbox = font->getFontBBox();
-    const double * font_matrix = font->getFontMatrix();
+    const auto & font_bbox = font->getFontBBox();
+    const auto & font_matrix = font->getFontMatrix();
     double transformed_bbox[4];
-    memcpy(transformed_bbox, font_bbox, 4 * sizeof(double));
+    memcpy(transformed_bbox, font_bbox.data(), 4 * sizeof(double));
     /*
     // add the origin to the bbox
     if(transformed_bbox[0] > 0) transformed_bbox[0] = 0;
@@ -216,7 +212,7 @@ string HTMLRenderer::dump_type3_font (GfxFont * font, FontInfo & info)
     if(transformed_bbox[2] < 0) transformed_bbox[2] = 0;
     if(transformed_bbox[3] < 0) transformed_bbox[3] = 0;
     */
-    tm_transform_bbox(font_matrix, transformed_bbox);
+    tm_transform_bbox(font_matrix.data(), transformed_bbox);
     double transformed_bbox_width = transformed_bbox[2] - transformed_bbox[0];
     double transformed_bbox_height = transformed_bbox[3] - transformed_bbox[1];
     info.font_size_scale = std::max(transformed_bbox_width, transformed_bbox_height);
@@ -266,7 +262,7 @@ string HTMLRenderer::dump_type3_font (GfxFont * font, FontInfo & info)
             cairo_set_font_matrix(cr, &m1);
 
             cairo_glyph_t glyph;
-            glyph.index = cur_font->getGlyph(code, nullptr, 0);
+            glyph.index = cur_font->getGlyph(code).value_or(0);
             glyph.x = 0;
             glyph.y = GLYPH_DUMP_EM_SIZE;
             cairo_show_glyphs(cr, &glyph, 1);
@@ -403,7 +399,10 @@ void HTMLRenderer::embed_font(const string & filepath, GfxFont * font, FontInfo 
         ofstream((char*)fn, ofstream::binary) << ifstream(filepath).rdbuf();
     }
 
-    int * code2GID = nullptr;
+    const int * code2GID = nullptr;
+    // poppler hands back the code-to-GID maps as std::vector<int>; keep them
+    // alive here, code2GID points into one of them (or into the GfxCIDFont)
+    std::vector<int> code2GID_map;
     int code2GID_len = 0;
     int maxcode = 0;
 
@@ -486,9 +485,10 @@ void HTMLRenderer::embed_font(const string & filepath, GfxFont * font, FontInfo 
             else
             {
                 ffw_reencode_glyph_order();
-                if(std::unique_ptr<FoFiTrueType> fftt = FoFiTrueType::load((char*)filepath.c_str()))
+                if(std::unique_ptr<FoFiTrueType> fftt = FoFiTrueType::load(filepath.c_str(), 0))
                 {
-                    code2GID = font_8bit->getCodeToGIDMap(fftt.get());
+                    code2GID_map = font_8bit->getCodeToGIDMap(fftt.get());
+                    code2GID = code2GID_map.data();
                     code2GID_len = 256;
                 }
             }
@@ -544,17 +544,21 @@ void HTMLRenderer::embed_font(const string & filepath, GfxFont * font, FontInfo 
 
             // To locate CID2GID for the font
             // as in CairoFontEngine.cc
-            if((code2GID = _font->getCIDToGID()))
+            const std::vector<int> & cidToGID = _font->getCIDToGID();
+            if(!cidToGID.empty())
             {
                 // use the mapping stored in _font
-                code2GID_len = _font->getCIDToGIDLen();
+                code2GID = cidToGID.data();
+                code2GID_len = (int)cidToGID.size();
             }
             else
             {
                 // use the mapping stored in the file
-                if(std::unique_ptr<FoFiTrueType> fftt = FoFiTrueType::load((char*)filepath.c_str()))
+                if(std::unique_ptr<FoFiTrueType> fftt = FoFiTrueType::load(filepath.c_str(), 0))
                 {
-                    code2GID = _font->getCodeToGIDMap(fftt.get(), &code2GID_len);
+                    code2GID_map = _font->getCodeToGIDMap(fftt.get());
+                    code2GID = code2GID_map.data();
+                    code2GID_len = (int)code2GID_map.size();
                 }
             }
         }
@@ -592,11 +596,10 @@ void HTMLRenderer::embed_font(const string & filepath, GfxFont * font, FontInfo 
         unordered_set<int> codeset;
         bool name_conflict_warned = false;
 
-        auto ctu = font->getToUnicode();
-        // NOTE: Poppler has changed its effective ABI
-        // in now expects the USER to increment any ref counters
+        // poppler owns the ToUnicode map (it is kept alive by the GfxFont) and
+        // stopped exposing reference counting in poppler 25.00
+        const CharCodeToUnicode * ctu = font->getToUnicode();
         assert(ctu);
-        ((CharCodeToUnicode *)ctu)->incRefCnt();
 
         std::fill(cur_mapping.begin(), cur_mapping.end(), -1);
         std::fill(width_list.begin(), width_list.end(), -1);
@@ -634,12 +637,14 @@ void HTMLRenderer::embed_font(const string & filepath, GfxFont * font, FontInfo 
             if(mapped_code > max_key)
                 max_key = mapped_code;
 
-            Unicode u;
+            Unicode u = 0;
             Unicode const *pu=&u;
             if(info.use_tounicode)
             {
+                // poppler >= 25.00 returns the length and points pu at its own
+                // internal storage
                 int n = ctu ?
-                  (((CharCodeToUnicode *)ctu)->mapToUnicode(cur_code, &pu)) :
+                  ctu->mapToUnicode(cur_code, &pu) :
                   0;
                 u = check_unicode(pu, n, cur_code, font);
             }
@@ -760,9 +765,6 @@ void HTMLRenderer::embed_font(const string & filepath, GfxFont * font, FontInfo 
         {
             cerr << "space width: " << info.space_width << endl;
         }
-
-        if(ctu)
-            ((CharCodeToUnicode *)ctu)->decRefCnt();
     }
 
     /*
@@ -897,7 +899,7 @@ const FontInfo * HTMLRenderer::install_font(GfxFont * font)
 #endif
         return &new_font_info;
     }
-    if(font->getWMode()) {
+    if(font->getWMode() != GfxFont::WritingMode::Horizontal) {
         cerr << "Writing mode is unsupported and will be rendered as Image" << endl;
         export_remote_default_font(new_fn_id);
         return &new_font_info;

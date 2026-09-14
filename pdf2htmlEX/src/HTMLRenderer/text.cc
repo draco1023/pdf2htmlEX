@@ -23,9 +23,9 @@ using std::none_of;
 using std::cerr;
 using std::endl;
 
-void HTMLRenderer::drawString(GfxState * state, const GooString * s)
+void HTMLRenderer::drawString(GfxState * state, const std::string & s)
 {
-    if(s->getLength() == 0)
+    if(s.empty())
         return;
 
     auto font = state->getFont();
@@ -41,7 +41,7 @@ void HTMLRenderer::drawString(GfxState * state, const GooString * s)
 
 
     if(state->getFont()
-        && ( (state->getFont()->getWMode())
+        && ( (state->getFont()->getWMode() != GfxFont::WritingMode::Horizontal)
             || ((state->getFont()->getType() == fontType3) && (!param.process_type3))
             || (state->getRender() >= 4)
            )
@@ -49,7 +49,7 @@ void HTMLRenderer::drawString(GfxState * state, const GooString * s)
     {
         // We still want to go through the loop to ensure characters are added to the covered_chars array
         drawChars = false;
-//printf("%d / %d / %d\n", state->getFont()->getWMode(), (state->getFont()->getType() == fontType3), state->getRender());
+//printf("%d / %d / %d\n", (state->getFont()->getWMode() == GfxFont::WritingMode::Vertical), (state->getFont()->getType() == fontType3), state->getRender());
     }
 
     // see if the line has to be closed due to state change
@@ -58,8 +58,8 @@ void HTMLRenderer::drawString(GfxState * state, const GooString * s)
 
     // Now ready to output
     // get the unicodes
-    const char *p = (s->toStr()).c_str();
-    int len = s->getLength();
+    const char *p = s.c_str();
+    int len = s.length();
 
     //accumulated displacement of chars in this string, in text object space
     double dx = 0;

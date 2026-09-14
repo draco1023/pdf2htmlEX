@@ -4,7 +4,9 @@ on: [push]
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    # Poppler 26.09.0 needs glib >= 2.80, cairo >= 1.18, freetype >= 2.13,
+    # fontconfig >= 2.15 and cmake >= 3.28, which ubuntu-22.04 does not provide
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4

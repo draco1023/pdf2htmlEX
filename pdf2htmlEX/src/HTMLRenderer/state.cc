@@ -252,7 +252,7 @@ void HTMLRenderer::check_state_change(GfxState * state)
         m1[5] = state->getRise();
         m1[1] = m1[2] = m1[4] = 0;
 
-        tm_multiply(m2, state->getCTM(), state->getTextMat()); 
+        tm_multiply(m2, state->getCTM().data(), state->getTextMat().data()); 
         tm_multiply(new_text_tm, m2, m1);
 
         if(!tm_equal(new_text_tm, cur_text_tm))
@@ -508,7 +508,9 @@ void HTMLRenderer::prepare_text_line(GfxState * state)
         // update position such that they will be recorded by text_line_buf
         double rise_x, rise_y;
         state->textTransformDelta(0, state->getRise(), &rise_x, &rise_y);
-        state->transform(state->getCurX() + rise_x, state->getCurY() + rise_y, &cur_line_state.x, &cur_line_state.y);
+        // Current poppler keeps the text cursor in curTextX/curTextY; curX/curY are
+        // only maintained for path construction (this mirrors Gfx::doShowText).
+        state->transform(state->getCurTextX() + rise_x, state->getCurTextY() + rise_y, &cur_line_state.x, &cur_line_state.y);
 
         if (param.correct_text_visibility)
             cur_line_state.first_char_index = get_char_count();
