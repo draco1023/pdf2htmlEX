@@ -168,7 +168,7 @@ void parse_options (int argc, char **argv)
 
         // fonts
         .add("embed-external-font", &param.embed_external_font, 1, "embed local match for external fonts")
-        .add("font-format", &param.font_format, "woff", "suffix for embedded font files (ttf,otf,woff,svg)")
+        .add("font-format", &param.font_format, "woff", "suffix for embedded font files (ttf,otf,woff,woff2,eot,svg)")
         .add("decompose-ligature", &param.decompose_ligature, 0, "decompose ligatures, such as \uFB01 -> fi")
         .add("turn-off-ligatures", &param.turn_off_ligatures, 0, "explicitly tell browsers not to use ligatures")
         .add("auto-hint", &param.auto_hint, 0, "use fontforge autohint on fonts without hints")

@@ -168,7 +168,11 @@ If this switch is off, only font names are exported such that web browsers may t
 
 .TP
 .B \-\-font\-format <format> (Default: woff)
-Specify the format of fonts extracted from the PDF file.
+Specify the format of fonts extracted from the PDF file. Supported values are
+ttf, otf, woff, woff2, eot and svg; the value is used both as the file suffix
+and to pick the CSS format() and MIME type. woff2 output needs a FontForge
+built with WOFF2 support (configured automatically when libwoff-dev is
+present).
 
 .TP
 .B \-\-decompose\-ligature <0|1> (Default: 0)

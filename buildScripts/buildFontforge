@@ -35,7 +35,7 @@ cmake        		                        \
   -DENABLE_LIBPNG:AUTO=ON                   \
   -DENABLE_LIBREADLINE:AUTO=OFF             \
   -DENABLE_LIBTIFF:AUTO=OFF                 \
-  -DENABLE_WOFF2:AUTO=OFF                   \
+  -DENABLE_WOFF2:AUTO=ON                    \
   -DENABLE_DOCS:AUTO=OFF                    \
   -DENABLE_CODE_COVERAGE:BOOL=OFF           \
   -DENABLE_DEBUG_RAW_POINTS:BOOL=OFF        \

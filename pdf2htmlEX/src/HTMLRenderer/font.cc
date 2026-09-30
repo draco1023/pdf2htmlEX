@@ -1016,6 +1016,10 @@ void HTMLRenderer::export_remote_font(const FontInfo & info, const string & form
     {
         css_font_format = "woff";
     }
+    else if(format == "woff2")
+    {
+        css_font_format = "woff2";
+    }
     else if(format == "eot")
     {
         css_font_format = "embedded-opentype";
