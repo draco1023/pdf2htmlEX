@@ -89,6 +89,20 @@ link_directories(${GLIB2_LIBRARY_DIRS})
 set(FONTFORGE_LIBRARIES ${FONTFORGE_LIBRARIES}
   ${CMAKE_SOURCE_DIR}/../fontforge/build/lib/libfontforge.a
 )
+#
+# When FontForge is built with ENABLE_WOFF2 its static library references the
+# WOFF2 encoder/decoder (and, through them, brotli), so pull those in too.
+# Not REQUIRED: without libwoff-dev FontForge is built without WOFF2 and the
+# symbols are never referenced.
+#
+pkg_check_modules(WOFF2 libwoff2enc libwoff2dec)
+if(WOFF2_FOUND)
+  include_directories(${WOFF2_INCLUDE_DIRS})
+  link_directories(${WOFF2_LIBRARY_DIRS})
+else()
+  message("-- WOFF2 not found: pdf2htmlEX will not be able to emit woff2 fonts")
+  set(WOFF2_LIBRARIES "")
+endif()
 
 # If we are using Alpine Linux then we need to add -lintl
 #
@@ -101,6 +115,7 @@ endif()
 set(PDF2HTMLEX_LIBS ${PDF2HTMLEX_LIBS}
   ${POPPLER_LIBRARIES}
   ${FONTFORGE_LIBRARIES}
+  ${WOFF2_LIBRARIES}
   ${LIB_INTL_LIBRARIES}
   ${CAIRO_LIBRARIES}
   -ljpeg

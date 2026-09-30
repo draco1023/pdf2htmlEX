@@ -48,6 +48,7 @@ const std::map<std::string, std::string> FORMAT_MIME_TYPE_MAP({
     {"svg", "image/svg+xml"},
     {"ttf", "application/x-font-ttf"},
     {"woff", "application/font-woff"},
+    {"woff2", "font/woff2"},
 });
 
 } //namespace pdf2htmlEX
